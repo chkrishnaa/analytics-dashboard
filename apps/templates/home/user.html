@@ -1,0 +1,352 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} User Profile {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style>
+  .profile-image-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+  
+  .profile-image-container .avatar {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  
+  .profile-image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .profile-image-container:hover .profile-image-overlay {
+    opacity: 1;
+  }
+  
+  .profile-image-overlay i {
+    color: white;
+    font-size: 24px;
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 300px;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="content">
+    <!-- Notification toast -->
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000">
+      <div class="toast-header">
+        <strong class="mr-auto" id="toast-title">Notification</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body" id="toast-message">
+        
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="title">Edit Profile</h5>
+          </div>
+
+          <div class="card-body">
+            <form id="profile-form">
+              <div class="row">
+                <div class="col-md-6 pr-md-1">
+                  <div class="form-group">
+                    <label class="form-label {% if not current_user.email %} text-danger {% endif%}">Email Address</label>
+                    <input type="email" name="email" class="form-control"
+                    {% if current_user.email %} readonly {% endif %}
+                     placeholder="Your email Here"
+                     value="{{ current_user.email }}">
+                  </div>
+                </div>
+                
+                <div class="col-md-6 pr-md-1">
+                  <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" class="form-control" value="{{current_user.username}}" readonly>
+                  </div>
+                </div>
+                
+              </div>
+              <div class="row">
+                <div class="col-md-6 pr-md-1">
+                  <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" id="first_name" class="form-control" placeholder="First Name">
+                  </div>
+                </div>
+                <div class="col-md-6 pl-md-1">
+                  <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" id="last_name" class="form-control" placeholder="Last Name">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address" id="address" class="form-control" placeholder="Home Address">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4 pr-md-1">
+                  <div class="form-group">
+                    <label>City</label>
+                    <input type="text" name="city" id="city" class="form-control" placeholder="City">
+                  </div>
+                </div>
+                <div class="col-md-4 px-md-1">
+                  <div class="form-group">
+                    <label>Country</label>
+                    <input type="text" name="country" id="country" class="form-control" placeholder="Country">
+                  </div>
+                </div>
+                <div class="col-md-4 pl-md-1">
+                  <div class="form-group">
+                    <label>Postal Code</label>
+                    <input type="text" name="postal_code" id="postal_code" class="form-control" placeholder="ZIP Code">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-8">
+                  <div class="form-group">
+                    <label>About Me</label>
+                    <textarea name="about_me" id="about_me" rows="4" cols="80" class="form-control" placeholder="Here can be your description"></textarea>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>Position</label>
+                    <input type="text" name="position" id="position" class="form-control" placeholder="Your Position" value="Member">
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="card-footer">
+            <button type="button" id="save-profile" class="btn btn-fill btn-primary">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-user">
+          <div class="card-body">
+            <p class="card-text">
+              <div class="author">
+                <div class="block block-one"></div>
+                <div class="block block-two"></div>
+                <div class="block block-three"></div>
+                <div class="block block-four"></div>
+                <div class="profile-image-container" id="profile-image-container">
+                  <img class="avatar" id="profile-image" src="{{ config.ASSETS_ROOT }}/img/default-avatar.png" alt="Profile Picture">
+                  <div class="profile-image-overlay">
+                    <i class="tim-icons icon-camera-18"></i>
+                  </div>
+                  <input type="file" id="profile-image-upload" class="hidden" accept="image/*">
+                </div>
+                <h5 class="title" id="profile-name">{{current_user.username}}</h5>
+                <p class="description" id="profile-position">
+                  Member
+                </p>
+              </div>
+            </p>
+            <div class="card-description" id="profile-about">
+              No bio information added yet.
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="button-container">
+              <button href="javascript:void(0)" class="btn btn-icon btn-round btn-facebook">
+                <i class="fab fa-facebook"></i>
+              </button>
+              <button href="javascript:void(0)" class="btn btn-icon btn-round btn-twitter">
+                <i class="fab fa-twitter"></i>
+              </button>
+              <button href="javascript:void(0)" class="btn btn-icon btn-round btn-google">
+                <i class="fab fa-google-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script>
+  $(document).ready(function() {
+    // Load profile data from localStorage if available
+    loadProfileData();
+    
+    // Profile image upload handler
+    $('#profile-image-container').click(function() {
+      $('#profile-image-upload').click();
+    });
+    
+    $('#profile-image-upload').change(function() {
+      if (this.files && this.files[0]) {
+        var formData = new FormData();
+        formData.append('profile_image', this.files[0]);
+        
+        $.ajax({
+          url: '/upload-profile-image',
+          type: 'POST',
+          data: formData,
+          contentType: false,
+          processData: false,
+          success: function(response) {
+            if (response.success) {
+              // Update profile image
+              var imagePath = response.image_path;
+              $('#profile-image').attr('src', '{{ config.ASSETS_ROOT }}/' + imagePath);
+              
+              // Also update the navbar profile image
+              $('.nav-item .photo img').attr('src', '{{ config.ASSETS_ROOT }}/' + imagePath);
+              
+              // Save profile image path to localStorage
+              localStorage.setItem('profileImage', imagePath);
+              
+              showToast('Success', 'Profile image updated successfully');
+            } else {
+              showToast('Error', response.message);
+            }
+          },
+          error: function() {
+            showToast('Error', 'Failed to upload image');
+          }
+        });
+      }
+    });
+    
+    // Profile form submission
+    $('#save-profile').click(function() {
+      // Get form data directly from fields
+      var formData = {
+        first_name: $('#first_name').val(),
+        last_name: $('#last_name').val(),
+        address: $('#address').val(),
+        city: $('#city').val(),
+        country: $('#country').val(),
+        postal_code: $('#postal_code').val(),
+        about_me: $('#about_me').val(),
+        position: $('#position').val() || 'Member'
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('profileData', JSON.stringify(formData));
+      
+      // Update UI
+      updateProfileUI(formData);
+      
+      // Send to server (just for notification purposes)
+      $.ajax({
+        url: '/update-profile',
+        type: 'POST',
+        data: formData,
+        success: function(response) {
+          if (response.success) {
+            showToast('Success', 'Profile updated successfully');
+          } else {
+            showToast('Error', response.message);
+          }
+        },
+        error: function(xhr) {
+          var message = 'Failed to update profile';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            message = xhr.responseJSON.message;
+          }
+          showToast('Error', message);
+        }
+      });
+    });
+    
+    // Load profile data from localStorage
+    function loadProfileData() {
+      var profileData = localStorage.getItem('profileData');
+      var profileImage = localStorage.getItem('profileImage');
+      
+      if (profileData) {
+        profileData = JSON.parse(profileData);
+        
+        // Fill form fields
+        $('#first_name').val(profileData.first_name || '');
+        $('#last_name').val(profileData.last_name || '');
+        $('#address').val(profileData.address || '');
+        $('#city').val(profileData.city || '');
+        $('#country').val(profileData.country || '');
+        $('#postal_code').val(profileData.postal_code || '');
+        $('#about_me').val(profileData.about_me || '');
+        $('#position').val(profileData.position || 'Member');
+        
+        // Update profile UI
+        updateProfileUI(profileData);
+      }
+      
+      if (profileImage) {
+        // Update profile image
+        $('#profile-image').attr('src', '{{ config.ASSETS_ROOT }}/' + profileImage);
+        $('.nav-item .photo img').attr('src', '{{ config.ASSETS_ROOT }}/' + profileImage);
+      }
+    }
+    
+    // Update the profile UI with the given data
+    function updateProfileUI(data) {
+      var fullName = data.first_name + ' ' + data.last_name;
+      if (!data.first_name && !data.last_name) {
+        fullName = "{{ current_user.username }}";
+      }
+      
+      $('#profile-name').text(fullName);
+      $('#profile-position').text(data.position || 'Member');
+      $('#profile-about').text(data.about_me || 'No bio information added yet.');
+    }
+    
+    // Helper function to show toast notifications
+    function showToast(title, message) {
+      $('#toast-title').text(title);
+      $('#toast-message').text(message);
+      $('.toast').toast('show');
+    }
+  });
+</script>
+{% endblock javascripts %}
